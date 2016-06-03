@@ -5,36 +5,45 @@ GRAMMAR_RELPATH1 = "data/mini-grammar-nonterminal-to-terminal"
 
 from waffle import system
 import pandas as pd
+import logging
 
-test_str = "Book that flight"
 
-grammar_file_pth = system.abs_path(GRAMMAR_RELPATH0)
-grammar = pd.read_csv(grammar_file_pth)
+def get_tables(path0, path1):
+    grammar_file_pth = system.abs_path(path0)
+    grammar = pd.read_csv(grammar_file_pth)
 
-internal_table = {}
-for index, row in grammar.iterrows():
-    if row["left"] not in internal_table:
-        internal_table[row["left"]] = [row["right"]]
-    else:
-        internal_table[row["left"]].append(row["right"])
+    internal_table = {}
+    for index, row in grammar.iterrows():
+        if row["left"] not in internal_table:
+            internal_table[row["left"]] = [row["right"]]
+        else:
+            internal_table[row["left"]].append(row["right"])
 
-grammar_file_pth = system.abs_path(GRAMMAR_RELPATH1)
-grammar = pd.read_csv(grammar_file_pth)
+    grammar_file_pth = system.abs_path(path1)
+    grammar = pd.read_csv(grammar_file_pth)
 
-terminal_table = {}
-for index, row in grammar.iterrows():
-    if row["left"] not in terminal_table:
-        terminal_table[row["left"]] = [row["right"]]
-    else:
-        terminal_table[row["left"]].append(row["right"])
+    terminal_table = {}
+    for index, row in grammar.iterrows():
+        if row["left"] not in terminal_table:
+            terminal_table[row["left"]] = [row["right"]]
+        else:
+            terminal_table[row["left"]].append(row["right"])
+    return internal_table, terminal_table
+
+internal_table, terminal_table = get_tables(GRAMMAR_RELPATH0, GRAMMAR_RELPATH1)
 
 print(internal_table)
 print(terminal_table)
 
-terminals = []
-for values in terminal_table.values():
-    terminals.extend(values)
-terminals = set(terminals)
+
+def get_terminals(terminal_table):
+    terminals = []
+    for values in terminal_table.values():
+        terminals.extend(values)
+    terminals = set(terminals)
+    return terminals
+
+terminals = get_terminals(terminal_table)
 
 """
 class Production(object):
@@ -127,11 +136,71 @@ class Node(object):
     def has_leaf_not_terminal(self):
         return self.find_leaf_not_terminal(self)
 
-    def is_tree(self):
+    def is_parse_tree(self):
         return self.is_start() is True and self.has_leaf_not_terminal() is False
 
     def get_children(self):
         return self.children
+
+
+class Tree(object):
+    """
+    Representation for a multi-tree
+    """
+    def __init__(self, root, children=None):
+        self.root = root
+        if children:
+            self.children = children
+        else:
+            self.children = []
+
+    def expand_self(self):
+        """
+        This method generates several expansions from a tree
+        """
+        node_list = []
+        if self.is_leaf():
+            print("Leaf node can not be expanded")
+            raise Exception
+        """
+        for descendant in self.descendants:
+            new_node =
+        """
+
+    def get_expections(self, node):
+        expections = []
+        if node.symbol in internal_table.keys():
+            expections += internal_table[node.symbol]
+        if node.symbol in terminal_table.keys():
+            expections += terminal_table[node.symbol]
+        return expections
+
+
+    def get_leaves(self):
+        leaves = []
+        def get_leaves_rec(node):
+            if node.is_leaf():
+                leaves.append(node)
+            else:
+                for n in node.get_children():
+                    get_leaves_rec(n)
+
+        return get_leaves_rec(self.root)
+
+
+class ParseTree(object):
+    """
+    A wrapper of the root node (which is the equivalent of a parse tree)
+    """
+    def __init__(self, root):
+        if not hasattr(root, "is_parse_tree"):
+            logging.error("Root given is not a valid node object")
+            raise Exception
+        if root.is_parse_tree():
+            self.root = root
+        else:
+            logging.error("Root given is not a parse tree equivalent node")
+            raise Exception
 
 
 S = Node("S")
@@ -148,37 +217,25 @@ Det.add(T1)
 NP.add(Det, Noun)
 S.add(NP)
 
-print(S.has_leaf_not_terminal())
-print(S.is_tree())
-"""
-    def expand(self):
-        node_list = []
-        if self.is_leaf():
-            print("Leaf node can not be expanded")
-            raise Exception
-        for descendant in self.descendants:
-            new_node =
-"""
+print(S.is_parse_tree())
 
-"""
-def parse(internals_table, leaves_table, text=None):
-    parse_trees = []
-    parse_trees1 = []
 
-    if 'S' not in internals_table.keys():
+def build_all_parse_trees(internal_table, terminal_table):
+    """ Build All possible parse trees from grammars """
+    parse_tree_tmps = []
+
+    parse_tree_tmp = []
+    if 'S' not in internal_table.keys():
         logging.error("No root node 'S' in grammar")
         raise Exception
     else:
-        parse_trees.append(Node("S"))
+        parse_tree_tmp.append(Node("S"))
+    parse_tree_tmps.append(parse_tree_tmp)
 
+    parse_tree_tmp = []
     for inte in internal_table["S"]:
-        descendants = []
+        children = []
         symbols = inte.split(" ")
         for symbol in symbols:
-            descendants.append(Node(symbol))
-        parse_trees1.append(Node("S", descendants=descendants))
-    print(parse_trees1)
-
-
-parse(internal_table, terminal_table)
-"""
+            children.append(Node(symbol))
+        parse_tree_tmp.append(Node("S", children=children))
