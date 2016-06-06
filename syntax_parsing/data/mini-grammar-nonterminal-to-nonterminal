@@ -5,11 +5,10 @@ S,VP
 NP,Pronoun
 NP,Det Nominal
 Nominal,Noun
-Nominal,Nominal Noun
-Nominal,Nominal PP
+Nominal,PP
 VP,Verb
 VP,Verb NP
 VP,Verb NP PP
 VP,Verb PP
-VP,VP PP
+VP,PP
 PP,Preposition NP
