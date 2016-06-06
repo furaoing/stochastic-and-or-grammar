@@ -89,6 +89,7 @@ class Rule(object):
 """
 
 
+# TODO: Should be renamed as SymbolNode (Parent Class: Node)
 class Node(object):
     def __init__(self, symbol, children=None):
         self.symbol = symbol
@@ -123,6 +124,7 @@ class Node(object):
     def is_leaf_not_terminal(self):
         return self.is_leaf() is True and self.is_terminal() is False
 
+    # TODO: Should be moved into tree class
     def find_leaf_not_terminal(self, node):
         if node.is_leaf():
             return node.is_leaf_not_terminal()
@@ -132,9 +134,11 @@ class Node(object):
                 flag = flag or self.find_leaf_not_terminal(n)
             return flag
 
+    # TODO: Should be moved into tree class
     def has_leaf_not_terminal(self):
         return self.find_leaf_not_terminal(self)
 
+    # TODO: Should be moved into tree class
     def is_parse_tree(self):
         return self.is_start() is True and self.has_leaf_not_terminal() is False
 
@@ -142,19 +146,29 @@ class Node(object):
         return self.children
 
 
+# TODO: Should be renamed ParseTree (Parent Class: Tree)
 class Tree(object):
     """
     Representation for a multi-tree
     """
-    def __init__(self, root):
+    def __init__(self, root: Node, children=None):
         self.root = root
+        self.children = children if children is not None else list()
 
-    def add(self, *nodes):
-        self.root.children.extend(nodes)
+    def is_leaf(self):
+        if len(self.children) == 0:
+            return True
+        else:
+            return False
+
+    def add(self, *trees):
+        self.children.extend(trees)
 
     @staticmethod
     def get_expections(node):
         expections = []
+        if node.symbol in terminals:
+            return expections
         if node.symbol in internal_table.keys():
             expections += internal_table[node.symbol]
         if node.symbol in terminal_table.keys():
@@ -175,7 +189,7 @@ class Tree(object):
         expections_ax = self.get_expections_of_leaves()
         return Tree.get_expection_comb(expections_ax)
 
-    def get_leaves(self):
+    def get_leaves(self)->Node:
         leaves = []
 
         def get_leaves_rec(node):
@@ -187,6 +201,12 @@ class Tree(object):
 
         get_leaves_rec(self.root)
         return leaves
+
+    def is_parse_tree(self):
+        return self.root.is_parse_tree()
+
+    def get_children(self):
+        return self.children
 
 
 class ParseTree(object):
@@ -204,22 +224,54 @@ class ParseTree(object):
             raise Exception
 
 
+# TODO: Should be renamed into ParseTreeForest (Parent Class: Forest)
 class Forest(object):
-    def __init__(self, root: Tree, children=None):
+    def __init__(self, root: Tree):
         self.root = root
-        self.children = children if children is not None else list()
 
-    def add(self, *trees):
-        self.children.extend(trees)
+    def get_leaves(self)->Tree:
+        leaves = []
 
-    def grow(self):
-        new_leaf_sets = self.root.get_new_leaf_sets()
+        def get_leaves_rec(tree):
+            if tree.is_leaf():
+                leaves.append(tree)
+            else:
+                for n in tree.get_children():
+                    get_leaves_rec(n)
+
+        get_leaves_rec(self.root)
+        return leaves
+
+    def grow(self, tree: Tree):
+        old_tree = copy.deepcopy(tree)
+        new_leaf_sets = old_tree.get_new_leaf_sets()
         for leaves in new_leaf_sets:
-            new_tree = self.generate_new_tree(leaves)
-            self.add(new_tree)
+            new_tree = Forest.generate_new_tree(old_tree, leaves)
+            tree.add(new_tree)
 
-    def generate_new_tree(self, leaves):
-        tree = copy.deepcopy(self.root)
+    def grow_one_layer(self):
+        leaves = self.get_leaves()
+        for leaf in leaves:
+            self.grow(leaf)
+
+    def grow_complete_forest(self):
+        while not self.is_complete_forest():
+            self.grow_one_layer()
+
+    def is_complete_forest(self):
+        flag = True
+        leaves = self.get_leaves()
+
+        for leaf in leaves:
+            f = leaf.is_parse_tree()
+            if not leaf.is_parse_tree():
+                flag = False
+                return flag
+        return flag
+
+    @staticmethod
+    def generate_new_tree(old_tree, leaves):
+        tree = copy.deepcopy(old_tree)
         old_leaves = tree.get_leaves()
         if len(old_leaves) != len(leaves):
             print("Error, new leaves set length does not match length of old_leaves")
@@ -227,14 +279,19 @@ class Forest(object):
 
         for i in range(len(old_leaves)):
             old_leaf = old_leaves[i]
-            leaf = leaves[i]
+            leaf_symbol = leaves[i]
 
-            if " " not in leaf:
+            # skip terminals (leaf==None)
+            if not leaf_symbol:
+                continue
+            if " " not in leaf_symbol:
+                leaf = Node(leaf_symbol)
                 old_leaf.add(leaf)
             else:
-                tmps = leaf.split(" ")
+                tmps = leaf_symbol.split(" ")
                 for tmp in tmps:
-                    old_leaf.add(tmp)
+                    leaf = Node(tmp)
+                    old_leaf.add(leaf)
         return tree
 
 
@@ -246,18 +303,17 @@ Noun = Node("Noun")
 T1 = Node("a")
 T2 = Node("flight")
 
-#Noun.add(T2)
-#Nom.add(Noun)
-#Det.add(T1)
-NP.add(Det, Noun)
+#NP.add(Det, Noun)
 S.add(NP)
 
 print(S.is_parse_tree())
 
 my_tree = Tree(S)
 forest = Forest(my_tree)
-forest.grow()
-print(my_tree.get_new_leaf_sets())
+#forest.grow_one_layer()
+forest.grow_complete_forest()
+
+axxfef = 1
 
 
 def build_all_parse_trees(internal_table, terminal_table):
