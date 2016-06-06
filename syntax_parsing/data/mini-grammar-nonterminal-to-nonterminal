@@ -1,14 +1,6 @@
 left,right
-S,NP VP
-S,Aux NP VP
-S,VP
+S,NP
 NP,Pronoun
-NP,Det Nominal
-Nominal,Noun
-Nominal,PP
-VP,Verb
-VP,Verb NP
-VP,Verb NP PP
-VP,Verb PP
-VP,PP
-PP,Preposition NP
+NP,Det Xi
+Xi, Xj
+

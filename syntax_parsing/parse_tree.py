@@ -304,7 +304,6 @@ T1 = Node("a")
 T2 = Node("flight")
 
 #NP.add(Det, Noun)
-S.add(NP)
 
 print(S.is_parse_tree())
 
