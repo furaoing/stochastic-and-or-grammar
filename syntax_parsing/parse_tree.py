@@ -1,16 +1,50 @@
 # -*- coding: utf-8 -*-
 
+
+def expand_element(x, y, depth):
+    code = []
+    ax = x[depth]
+    for i in ax:
+        code.append(y + [i])
+    return code
+
+
+def expand_group(x, y, depth):
+    code = []
+    for a_list in y:
+        code = code + expand_element(x, a_list, depth)
+    return code
+
+
+def helper(depth, bank):
+    if depth == 0:
+        tmp = bank[depth]
+        ax = []
+        for x in tmp:
+            ax.append([x])
+        return ax
+    else:
+        expanded = helper(depth-1, bank)
+        return expand_group(bank, expanded, depth)
+
+
+def generate_comb2(bank):
+    width = len(bank)
+    depth = width - 1
+    result = helper(depth, bank)
+    print(len(result))
+    print(result)
+
+
 GRAMMAR_RELPATH0 = "data/mini-grammar-nonterminal-to-nonterminal"
 GRAMMAR_RELPATH1 = "data/mini-grammar-nonterminal-to-terminal"
 
-from waffle import system
 import pandas as pd
 import logging
 
 
 def get_tables(path0, path1):
-    grammar_file_pth = system.abs_path(path0)
-    grammar = pd.read_csv(grammar_file_pth)
+    grammar = pd.read_csv(path0)
 
     internal_table = {}
     for index, row in grammar.iterrows():
@@ -19,8 +53,7 @@ def get_tables(path0, path1):
         else:
             internal_table[row["left"]].append(row["right"])
 
-    grammar_file_pth = system.abs_path(path1)
-    grammar = pd.read_csv(grammar_file_pth)
+    grammar = pd.read_csv(path1)
 
     terminal_table = {}
     for index, row in grammar.iterrows():
@@ -154,20 +187,8 @@ class Tree(object):
         else:
             self.children = []
 
-    def expand_self(self):
-        """
-        This method generates several expansions from a tree
-        """
-        node_list = []
-        if self.is_leaf():
-            print("Leaf node can not be expanded")
-            raise Exception
-        """
-        for descendant in self.descendants:
-            new_node =
-        """
-
-    def get_expections(self, node):
+    @staticmethod
+    def get_expections(node):
         expections = []
         if node.symbol in internal_table.keys():
             expections += internal_table[node.symbol]
@@ -175,9 +196,23 @@ class Tree(object):
             expections += terminal_table[node.symbol]
         return expections
 
+    @staticmethod
+    def generate_comb(bank):
+        return generate_comb2(bank)
+
+    def get_expections_ax(self):
+        return [self.get_expections(x) for x in self.get_leaves()]
+
+    @staticmethod
+    def get_expection_comb(expections_ax):
+        """
+        expections_ax = [['that', 'this', 'a'], ['book', 'flight', 'meal', 'money']]
+        """
+        return Tree.generate_comb(expections_ax)
 
     def get_leaves(self):
         leaves = []
+
         def get_leaves_rec(node):
             if node.is_leaf():
                 leaves.append(node)
@@ -185,7 +220,8 @@ class Tree(object):
                 for n in node.get_children():
                     get_leaves_rec(n)
 
-        return get_leaves_rec(self.root)
+        get_leaves_rec(self.root)
+        return leaves
 
 
 class ParseTree(object):
@@ -203,6 +239,16 @@ class ParseTree(object):
             raise Exception
 
 
+class Forest(object):
+    def __init__(self, root:Tree, children=None):
+        self.root = root
+        self.children = children if children is not None else None
+
+    def grow(self):
+        leaves = self.root.get_leaves()
+
+
+
 S = Node("S")
 NP = Node("NP")
 Det = Node("Det")
@@ -211,13 +257,16 @@ Noun = Node("Noun")
 T1 = Node("a")
 T2 = Node("flight")
 
-Noun.add(T2)
+#Noun.add(T2)
 Nom.add(Noun)
-Det.add(T1)
+#Det.add(T1)
 NP.add(Det, Noun)
 S.add(NP)
 
 print(S.is_parse_tree())
+
+my_tree = Tree(S)
+print([my_tree.get_expections(x) for x in my_tree.get_leaves()])
 
 
 def build_all_parse_trees(internal_table, terminal_table):
