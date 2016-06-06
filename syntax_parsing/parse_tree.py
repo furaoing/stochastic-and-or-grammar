@@ -252,7 +252,8 @@ class Forest(object):
     def grow_one_layer(self):
         leaves = self.get_leaves()
         for leaf in leaves:
-            self.grow(leaf)
+            if not leaf.is_parse_tree():
+                self.grow(leaf)
 
     def grow_complete_forest(self):
         while not self.is_complete_forest():
@@ -263,7 +264,6 @@ class Forest(object):
         leaves = self.get_leaves()
 
         for leaf in leaves:
-            f = leaf.is_parse_tree()
             if not leaf.is_parse_tree():
                 flag = False
                 return flag
@@ -310,7 +310,6 @@ print(S.is_parse_tree())
 
 my_tree = Tree(S)
 forest = Forest(my_tree)
-#forest.grow_one_layer()
 forest.grow_complete_forest()
 
 axxfef = 1
