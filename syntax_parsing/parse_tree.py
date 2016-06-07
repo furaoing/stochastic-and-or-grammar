@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-GRAMMAR_RELPATH0 = "data/mini-grammar-nonterminal-to-nonterminal"
-GRAMMAR_RELPATH1 = "data/mini-grammar-nonterminal-to-terminal"
-
 from waffle.math.combinations import generate_comb
 import pandas as pd
 import logging
 import copy
+from typing import List
+
+GRAMMAR_RELPATH0 = "data/mini-grammar-nonterminal-to-nonterminal"
+GRAMMAR_RELPATH1 = "data/mini-grammar-nonterminal-to-terminal"
 
 
 def get_tables(path0, path1):
@@ -91,7 +92,7 @@ class Rule(object):
 
 # TODO: Should be renamed as SymbolNode (Parent Class: Node)
 class Node(object):
-    def __init__(self, symbol, children=None):
+    def __init__(self, symbol: str, children=None):
         self.symbol = symbol
         # Equivalent of value of each node in b-tree
         self.name = self.symbol
@@ -165,7 +166,7 @@ class Tree(object):
         self.children.extend(trees)
 
     @staticmethod
-    def get_expections(node):
+    def get_expections(node: Node):
         expections = []
         if node.symbol in terminals:
             return expections
@@ -179,7 +180,7 @@ class Tree(object):
         return [self.get_expections(x) for x in self.get_leaves()]
 
     @staticmethod
-    def get_expection_comb(expections_ax):
+    def get_expection_comb(expections_ax: List[List[str]]):
         """
         expections_ax = [['that', 'this', 'a'], ['book', 'flight', 'meal', 'money']]
         """
@@ -189,7 +190,7 @@ class Tree(object):
         expections_ax = self.get_expections_of_leaves()
         return Tree.get_expection_comb(expections_ax)
 
-    def get_leaves(self)->Node:
+    def get_leaves(self)->List[Node]:
         leaves = []
 
         def get_leaves_rec(node):
@@ -213,7 +214,7 @@ class ParseTree(object):
     """
     A wrapper of the root node (which is the equivalent of a parse tree)
     """
-    def __init__(self, root):
+    def __init__(self, root: Node):
         if not hasattr(root, "is_parse_tree"):
             logging.error("Root given is not a valid node object")
             raise Exception
@@ -229,7 +230,7 @@ class Forest(object):
     def __init__(self, root: Tree):
         self.root = root
 
-    def get_leaves(self)->Tree:
+    def get_leaves(self)->List[Tree]:
         leaves = []
 
         def get_leaves_rec(tree):
@@ -242,24 +243,24 @@ class Forest(object):
         get_leaves_rec(self.root)
         return leaves
 
-    def grow(self, tree: Tree):
+    def grow(self, tree: Tree)->None:
         old_tree = copy.deepcopy(tree)
         new_leaf_sets = old_tree.get_new_leaf_sets()
         for leaves in new_leaf_sets:
             new_tree = Forest.generate_new_tree(old_tree, leaves)
             tree.add(new_tree)
 
-    def grow_one_layer(self):
+    def grow_one_layer(self)->None:
         leaves = self.get_leaves()
         for leaf in leaves:
             if not leaf.is_parse_tree():
                 self.grow(leaf)
 
-    def grow_complete_forest(self):
+    def grow_complete_forest(self)->None:
         while not self.is_complete_forest():
             self.grow_one_layer()
 
-    def is_complete_forest(self):
+    def is_complete_forest(self)->bool:
         flag = True
         leaves = self.get_leaves()
 
@@ -270,7 +271,7 @@ class Forest(object):
         return flag
 
     @staticmethod
-    def generate_new_tree(old_tree, leaves):
+    def generate_new_tree(old_tree, leaves)->Tree:
         tree = copy.deepcopy(old_tree)
         old_leaves = tree.get_leaves()
         if len(old_leaves) != len(leaves):
@@ -311,25 +312,4 @@ my_tree = Tree(S)
 forest = Forest(my_tree)
 forest.grow_complete_forest()
 
-axxfef = 1
-
-
-def build_all_parse_trees(internal_table, terminal_table):
-    """ Build All possible parse trees from grammars """
-    parse_tree_tmps = []
-
-    parse_tree_tmp = []
-    if 'S' not in internal_table.keys():
-        logging.error("No root node 'S' in grammar")
-        raise Exception
-    else:
-        parse_tree_tmp.append(Node("S"))
-    parse_tree_tmps.append(parse_tree_tmp)
-
-    parse_tree_tmp = []
-    for inte in internal_table["S"]:
-        children = []
-        symbols = inte.split(" ")
-        for symbol in symbols:
-            children.append(Node(symbol))
-        parse_tree_tmp.append(Node("S", children=children))
+debug_point1 = 0
